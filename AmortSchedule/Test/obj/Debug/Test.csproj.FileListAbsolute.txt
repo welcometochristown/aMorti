@@ -1,0 +1,12 @@
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.exe.config
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.exe
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.pdb
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\bin\Debug\AmortSchedule.dll
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\bin\Debug\AmortSchedule.pdb
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csprojAssemblyReference.cache
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.Form1.resources
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.Properties.Resources.resources
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.GenerateResource.cache
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.CopyComplete
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.exe
+E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.pdb

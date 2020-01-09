@@ -1,0 +1,5 @@
+E:\Personal\Github\AmortSchedule\AmortSchedule\AmortSchedule\bin\Debug\AmortSchedule.dll
+E:\Personal\Github\AmortSchedule\AmortSchedule\AmortSchedule\bin\Debug\AmortSchedule.pdb
+E:\Personal\Github\AmortSchedule\AmortSchedule\AmortSchedule\obj\Debug\AmortSchedule.csprojAssemblyReference.cache
+E:\Personal\Github\AmortSchedule\AmortSchedule\AmortSchedule\obj\Debug\AmortSchedule.dll
+E:\Personal\Github\AmortSchedule\AmortSchedule\AmortSchedule\obj\Debug\AmortSchedule.pdb

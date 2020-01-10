@@ -10,7 +10,7 @@ namespace AmortSchedule
     public class ScheduleEntry
     {
         [Browsable(false)]
-        public  Schedule Schedule { get; }
+        public Schedule Schedule { get; }
 
         [Browsable(true)]
         [DisplayName("Date")]
@@ -66,7 +66,6 @@ namespace AmortSchedule
             }
         }
 
-
         [Browsable(true)]
         [DisplayName("Total Paid")]
         public decimal TotalPaid
@@ -98,7 +97,7 @@ namespace AmortSchedule
         }
 
         [Browsable(true)]
-        [DisplayName("Total Outstanding")]
+        [DisplayName("Entry Outstanding")]
         public decimal TotalOutstanding
         {
             get
@@ -106,6 +105,17 @@ namespace AmortSchedule
                 return ScheduleEntryTransactions.Sum(n => n.Outstanding);
             }
         }
+
+        [Browsable(true)]
+        [DisplayName("Total Capital Outstanding")]
+        public decimal TotalCapitalOutstanding
+        {
+            get
+            {
+                return Schedule.ScheduleEntries.Where(n => n.EntryDate < EntryDate).Sum(n => n.CapitalOutstanding);
+            }
+        }
+
 
         [Browsable(false)]
         public List<ScheduleEntryTransaction> ScheduleEntryTransactions { get; } = new List<ScheduleEntryTransaction>();
@@ -127,5 +137,11 @@ namespace AmortSchedule
         {
             this.ScheduleEntryTransactions.AddRange(transactions);
         }
+
+        public decimal Outstanding(ScheduleEntryTransaction.TransactionType type)
+        {
+            return ScheduleEntryTransactions.Where(n => n.Type == type).Sum(n => n.Outstanding);
+        }
+
     }
 }

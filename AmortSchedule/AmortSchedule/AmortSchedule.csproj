@@ -45,6 +45,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScheduleEntry.cs" />
     <Compile Include="ScheduleEntryTransaction.cs" />
+    <Compile Include="ScheduleParameter.cs" />
+    <Compile Include="ScheduleRepaymentParameter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

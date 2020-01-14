@@ -6,7 +6,13 @@ using System.Threading.Tasks;
 
 namespace AmortSchedule
 {
-    public class ScheduleRepaymentParameter
+    public class ScheduleRepaymentParameter : ScheduleParameter
     {
+        public ScheduleRepaymentParameter(ParameterType type, string value)
+            :base(type, value)
+        {
+            if (!type.ToString().StartsWith("REPAYMENT_"))
+                throw new InvalidOperationException($"Invalid repayment paramenter type {type.ToString()}");
+        }
     }
 }

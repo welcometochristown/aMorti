@@ -9,15 +9,25 @@ namespace AmortSchedule
 {
     public class ScheduleEntry
     {
+        public enum ScheduleEntryTypeEnum
+        {
+            Pay,
+            Repay
+        }
+
         [Browsable(false)]
         public Schedule Schedule { get; }
+
+        [Browsable(true)]
+        [DisplayName("Type")]
+        public ScheduleEntryTypeEnum EntryType { get; }
 
         [Browsable(true)]
         [DisplayName("Date")]
         public DateTime EntryDate { get; }
 
         [Browsable(true)]
-        [DisplayName("Capital Due")]
+        [DisplayName("Capital")]
         public decimal Capital
         {
             get
@@ -27,7 +37,7 @@ namespace AmortSchedule
         }
 
         [Browsable(true)]
-        [DisplayName("Interest Due")]
+        [DisplayName("Interest")]
         public decimal Interest
         {
             get
@@ -37,7 +47,7 @@ namespace AmortSchedule
         }
 
         [Browsable(true)]
-        [DisplayName("Total Due")]
+        [DisplayName("Total")]
         public decimal Total
         {
             get
@@ -46,39 +56,10 @@ namespace AmortSchedule
             }
         }
 
-        [Browsable(true)]
-        [DisplayName("Capital Paid")]
-        public decimal CapitalPaid
-        {
-            get
-            {
-                return Capital - CapitalOutstanding;
-            }
-        }
 
         [Browsable(true)]
-        [DisplayName("Interest Paid")]
-        public decimal InterestPaid
-        {
-            get
-            {
-                return Interest - InterestOutstanding;
-            }
-        }
-
-        [Browsable(true)]
-        [DisplayName("Total Paid")]
-        public decimal TotalPaid
-        {
-            get
-            {
-                return Total - TotalOutstanding;
-            }
-        }
-
-        [Browsable(true)]
-        [DisplayName("Capital Outstanding")]
-        public decimal CapitalOutstanding
+        [DisplayName("Outstanding Capital")]
+        public decimal OutstandingCapital
         {
             get
             {
@@ -87,8 +68,8 @@ namespace AmortSchedule
         }
 
         [Browsable(true)]
-        [DisplayName("Interest Outstanding")]
-        public decimal InterestOutstanding
+        [DisplayName("Outstanding Interest")]
+        public decimal OutstandingInterest
         {
             get
             {
@@ -97,22 +78,12 @@ namespace AmortSchedule
         }
 
         [Browsable(true)]
-        [DisplayName("Entry Outstanding")]
-        public decimal TotalOutstanding
+        [DisplayName("Total")]
+        public decimal OutstandingTotal
         {
             get
             {
-                return ScheduleEntryTransactions.Sum(n => n.Outstanding);
-            }
-        }
-
-        [Browsable(true)]
-        [DisplayName("Total Capital Outstanding")]
-        public decimal TotalCapitalOutstanding
-        {
-            get
-            {
-                return Schedule.ScheduleEntries.Where(n => n.EntryDate < EntryDate).Sum(n => n.CapitalOutstanding);
+                return OutstandingCapital + OutstandingInterest;
             }
         }
 
@@ -120,10 +91,11 @@ namespace AmortSchedule
         [Browsable(false)]
         public List<ScheduleEntryTransaction> ScheduleEntryTransactions { get; } = new List<ScheduleEntryTransaction>();
 
-        public ScheduleEntry(Schedule schedule, DateTime entryDate)
+        public ScheduleEntry(Schedule schedule, ScheduleEntryTypeEnum type, DateTime entryDate)
         {
             this.Schedule = schedule;
             this.EntryDate = entryDate.Date;
+            this.EntryType = type;
         }
 
         public ScheduleEntryTransaction AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType type, decimal value)
@@ -133,9 +105,10 @@ namespace AmortSchedule
             return transaction;
         }
 
-        public void AddScheduleEntryTransaction(IEnumerable<ScheduleEntryTransaction> transactions)
+        public IEnumerable<ScheduleEntryTransaction> AddScheduleEntryTransactions(IEnumerable<Tuple<ScheduleEntryTransaction.TransactionType, decimal>> entries )
         {
-            this.ScheduleEntryTransactions.AddRange(transactions);
+            foreach(var i in entries)
+                yield return AddScheduleEntryTransaction(i.Item1, i.Item2);
         }
 
         public decimal Outstanding(ScheduleEntryTransaction.TransactionType type)

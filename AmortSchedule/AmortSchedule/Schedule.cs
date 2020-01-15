@@ -228,6 +228,8 @@ namespace AmortSchedule
                 //get all repayment entry dates
                 IEnumerable<Entry> rEntries = BuildDateTable(1, StartDate, StartDate.AddYears(1), ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH)).Select(n => new Entry { Date = n }).ToList();
 
+                rEntries = rEntries.Skip(1).Take(5).ToList();
+
                 rEntries = GenerateRepayments(ParseParameter<DateTime>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST),
                     rEntries, 1,
                     ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
@@ -237,7 +239,7 @@ namespace AmortSchedule
                 {
                     var entry = new ScheduleEntry(this, ScheduleEntry.ScheduleEntryTypeEnum.Repay, e.Date);
                     entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, e.ValueCapital);
-                    entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, e.ValueInterest);
+                    entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Interest, e.ValueInterest);
                     ScheduleEntries.Add(entry);
                 }
             }
@@ -334,150 +336,150 @@ namespace AmortSchedule
             //this is the ideal repayment across all schedule repayment entries
             decimal ideal_total_repayment = 0;
 
-            if (monthlyMultiplier == 0)
-                throw new InvalidOperationException("No monthly multiplier value supplied, unable to calculate ideal repayment value");
-
-            /*  some maths. See this mathexchange post for our understanding of this: https://math.stackexchange.com/questions/2521313/mathmatical-formula-possible/2521351?noredirect=1#comment5206959_2521351
-                More specifically, this uses a geometric series to calculate the initial starting point. This is much more efficient when compared with the old trial and error approach!
-                It means that the tweaking that follows to get the exact value is much more accurate. 
-            */
-
-            if (this.InterestRate == 0)
-                throw new InvalidOperationException("interest rate can't be 0");
-
-            decimal yearly_month_ratio = 1200 / monthlyMultiplier; //Although we use a daily interest calculation, when scheduling we assume that things are a little more fixed. Here we use a monthly interest calculation, and need to use a ratio to deal with none monthly loans.
-
-            decimal rate_of_interest = (1 + InterestRate / yearly_month_ratio); //using the above, we calculate the proper interest rate. note this is not the actual rate that will be used (because we use daily), but this gets us REAL close.
-            decimal rate_of_interest_pow_months = Convert.ToDecimal(Math.Pow(Convert.ToDouble(rate_of_interest), Convert.ToDouble(instances))); //To get a provisional rate for our period, we take the rate above then raise it to the power of the number of specific repayment inctances (e.g. 12 months monthly would be raised to the power of 12) 
-
-            decimal x = capitalBalance * rate_of_interest * ((1 / rate_of_interest) - 1); //the next three lines are our implementation of the geometric series described in the maths link above.
-            decimal y = ((1 / rate_of_interest_pow_months) - 1);
-            decimal result = x / y; //this result is effectively an ideal repayment value covering capital and interest but it will not work in reality. Why? Because effectively we are assuming fixed month lengths (e.g. every month is 30 days).
-
-            ideal_total_repayment = result;
-       
-
-            decimal totalRepaymentsValue = 0;
-            DateTime dtLast = dateStart.Date;
-            int attemptCounter = 0;
-
-            /*Thanks to the above calculation we are likely really close to the final value. We do need to adjust a little bit to make sure we are accounting for things like Feb being a short month. We are going to need to have a day levle calc anyway, because customers don't always repay on time.
-              In our  tests we have seen that often you only need to enter this loop once. The maths is accurate enough that we sometimes just put any overage on the last payment as its tiny anyway. If its bigger than £1 we iterate.
-              Thats actually super conservative, we could easily make that something like 50% of the normal repayment and customers will be quite happy with that. £1 works fine though, so who cares.
-             */
-            while (totalRepaymentsValue != capitalBalance) //so we loop while we haven't fully paid off the loan, adjusting things until we have and have a fixed value.
+            if (InterestRate == 0)
             {
-                //keep track of how many attempts we make
-                attemptCounter++;
-
-                //make sure the ideal is a rounded amount
-                ideal_total_repayment = Math.Round(ideal_total_repayment, 2, MidpointRounding.ToEven);
-
-               // log.Info($"Attempting repayment set with {ideal_total_repayment} as ideal repayment value");
-
-                //need to keep track of the last date for generating interest
-                dtLast = dateStart.Date;
-
-                decimal interestDue = interestBalance;
-
-                //log.Info($"Iterating over each repayment entry...");
-
-                //iterate over each schedule entry instance 
-                foreach (var entry in entries)
-                {
-                    //log.Info($"Creating entry for {entry.Date.ToString("yyyy-MM-dd")}");
-
-                    //how many repayments have we got already before this date
-                    decimal previousCapitalRepayments = entries
-                                                           .Where(n => n.Date < entry.Date)
-                                                           .Sum(n => Math.Abs(n.ValueCapital));
-
-                    //get balance at this point given any repayments made
-                    decimal currentBalance = capitalBalance - previousCapitalRepayments;
-
-                    //get interest from the core microservice.
-                    decimal interestAccrued = interestDue;
-
-                    //when should the interest accrual end?
-                    var interest_accrual_end = entry.Date.AddDays(-1);
-
-                    if (dtLast != entry.Date)
-                    {
-                        interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 364);
-                    }
-
-                    interestDue = 0;
-                    entry.ValueInterest = Math.Round(interestAccrued, 2, MidpointRounding.ToEven);
-
-                    decimal capitalValue = 0;
-
-                    if (entry.ValueInterest > ideal_total_repayment)
-                        capitalValue = 0;
-                    else if (!entries.Any(n => n.Date > entry.Date))
-                        capitalValue = currentBalance <= ideal_total_repayment ? currentBalance : ideal_total_repayment;
-                    else
-                        capitalValue = ideal_total_repayment - entry.ValueInterest;
-
-                    entry.ValueCapital = Math.Round(capitalValue, 2);
-
-                    //  log.Info($"Entry has {entry.ValueCapital} as capital and {entry.ValueInterest} as interest");
-
-                    dtLast = entry.Date;
-
-                }
-
-                //how much of the loan are we currently paying back?
-                totalRepaymentsValue = entries.Sum(n => Math.Abs(n.ValueCapital));
-
-                //how much difference between the principle amount and the total we have got now?
-                decimal difference = capitalBalance - totalRepaymentsValue;
-
-               // log.Info($"Total repayments value comes to {totalRepaymentsValue}, leaving a difference of {difference}");
-
-
-                //if we are less than 1 then just add it to the last repayment
-                if (Math.Abs(difference) < 1)
-                {
-                    //add the difference to the last repayment
-                    var last = entries.Last();
-
-                    var newCapitalValue = -Math.Round(Math.Abs(last.ValueCapital) + difference, 2);
-
-                   // log.Info($"Updating last repayment capital value from {last.ValueInterest} to {newCapitalValue}");
-
-                    last.ValueCapital = newCapitalValue;
-
-                    //recalculate total repayments value this should now be the loan amount
-                    totalRepaymentsValue = entries.Sum(n => Math.Abs(n.ValueCapital));
-
-                    if (totalRepaymentsValue != capitalBalance)
-                        throw new Exception("Failure to complete schedule, the total repayment amount generated did not equal the capital balance, this should never happen.");
-
-                    //should be good to exit the loop
-                    break;
-                }
-
-                //log.Info($"Starting new repayment generation set...");
-
-                //change the ideal total repayment
-                ideal_total_repayment += (difference / instances);
-
+                //no interest just use the capital balance
+                ideal_total_repayment = Math.Round(capitalBalance * instances);
+            }
+            else
+            {
+                //geometric series
+                //https://math.stackexchange.com/questions/2521313/mathmatical-formula-possible/2521351?noredirect=1#comment5206959_2521351
+                decimal ir = (1.0m + (InterestRate / 100.0m));
+                decimal x = capitalBalance * ir * ((1.0m / ir) - 1.0m);
+                decimal y = (1.0m / Convert.ToDecimal(Math.Pow(Convert.ToDouble(ir), Convert.ToDouble(instances)))) - 1.0m;
+                ideal_total_repayment = x / y;
             }
 
-           // log.Info($"Repayment entry generation took {attemptCounter} attempts");
+            if (ideal_total_repayment == 0)
+                throw new Exception("Ideal Repyment Cant Be Zero");
+
+            //track the last date
+            DateTime dtLast = dateStart.Date;
+
+            //make sure the ideal is a rounded amount
+            ideal_total_repayment = Math.Round(ideal_total_repayment, 2, MidpointRounding.ToEven);
+
+            //need to keep track of the last date for generating interest
+            dtLast = dateStart.Date;
+
+            decimal interestDue = interestBalance;
+
+            //iterate over each schedule entry instance 
+            foreach (var entry in entries)
+            {
+                //how many repayments have we got already before this date
+                decimal previousCapitalRepayments = entries
+                                                        .Where(n => n.Date < entry.Date)
+                                                        .Sum(n => Math.Abs(n.ValueCapital));
+
+                //get balance at this point given any repayments made
+                decimal currentBalance = capitalBalance - previousCapitalRepayments;
+
+                //get interest from the core microservice.
+                decimal interestAccrued = interestDue;
+
+                //when should the interest accrual end?
+                var interest_accrual_end = entry.Date.AddDays(-1);
+
+                //only days after the first entry will accrue interest
+                if (dtLast != entry.Date)
+                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 364);
+
+                //rounded interest
+                interestDue = 0;
+                entry.ValueInterest = Math.Round(interestAccrued, 2, MidpointRounding.ToEven);
+
+                //get the capital depending on how close to the ideal repayment we are
+                decimal capitalValue = 0;
+
+                if (entry.ValueInterest > ideal_total_repayment)
+                    capitalValue = 0;
+                else if (!entries.Any(n => n.Date > entry.Date))
+                    capitalValue = currentBalance <= ideal_total_repayment ? currentBalance : ideal_total_repayment;
+                else
+                    capitalValue = ideal_total_repayment - entry.ValueInterest;
+
+                entry.ValueCapital = Math.Round(capitalValue, 2);
+
+                dtLast = entry.Date;
+            }
+
+            //how much of the loan are we currently paying back?
+            decimal totalRepaymentsValue = entries.Sum(n => Math.Abs(n.ValueCapital));
+
+            //how much difference between the principle amount and the total we have got now?
+            decimal difference = capitalBalance - totalRepaymentsValue;
+
+            //add the difference to the last repayment
+            if (difference != 0)
+                 entries.Last().ValueCapital += difference;
+
             return entries;
         }
 
 
         private decimal CalcInterest(DateTime dtFrom, DateTime dtTo, decimal balance, decimal intRate, int YEARDAYCOUNT)
         {
-            var iRate = intRate / 100;
-            var span = dtTo.Date.Subtract(dtFrom.Date);
-            var days = Math.Abs(span.Days);
-            var i = (balance * iRate) / YEARDAYCOUNT;
-            var ir = i * days;
-            return ir;
+            // return 0;
+            //var iRate = intRate / 100;
+
+            var numDaysInRange = Math.Abs((dtTo.Date - dtFrom.Date).Days);
+            decimal dailyIR = (intRate / 100) / YEARDAYCOUNT;
+            decimal dailyInterest = dailyIR * Math.Max(0, balance);
+            decimal interest = dailyInterest * numDaysInRange;
+
+            numDaysInRange += 1;
+
+            return interest;
+
+            //var i = (balance * iRate) / YEARDAYCOUNT;
+            //var ir = i * days;
+            //return ir;
         }
+
+
+
+        //public static InterestQueryRowResult QuickInterestCalculation(int daysInYear, decimal balance, decimal interestRate, DateTime dtFrom, DateTime dtTo, decimal? dailyRounding = null)
+        //{
+        //    var result = new InterestQueryRowResult();
+
+        //    //get days in range
+        //    int numDaysInRange = (dtTo.Date - dtFrom.Date).Days;
+        //    decimal dailyIR = (interestRate / 100) / daysInYear;
+
+        //    //negative balances should accrue 0 interest
+        //    decimal dailyInterest = dailyIR * Math.Max(0, balance);
+
+        //    if (dailyRounding != null)
+        //        dailyInterest = Convert.ToDecimal(Math.Round(Convert.ToDouble(dailyInterest), Convert.ToInt16(dailyRounding.Value)));
+
+        //    //check we arent trying to get interest for same day
+        //    if (numDaysInRange < 0)
+        //        throw new Exception("Calculating Interest on a negative range is not allowed.");
+
+        //    //DateStart and DateEnd for interest accruals are inclusive. 
+        //    // Example (These are the dates stored in the database) :
+        //    //   dtFrom = 2018-01-01
+        //    //   dtTo = 2018-01-05
+        //    // If we use (dtTo.Date - dtFrom.Date).Days logic, then we will get 4 days. This is wrong, we need to include the 5th as well. 
+        //    // So lets add a day here.
+        //    numDaysInRange += 1;
+
+        //    //calculate the interest over these days
+        //    decimal interest = dailyInterest * numDaysInRange;
+
+        //    result.Balance = balance;
+        //    result.DateStart = dtFrom;
+        //    result.DateEnd = dtTo;
+        //    result.AccruedInterest = interest;
+        //    result.DailyInterest = dailyInterest;
+        //    result.Days = numDaysInRange;
+        //    result.InterestRate = interestRate;
+        //    result.DailyInterestRate = dailyIR;
+
+        //    return result;
+        //}
 
 
         /// <summary>

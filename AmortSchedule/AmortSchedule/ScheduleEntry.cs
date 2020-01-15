@@ -27,6 +27,16 @@ namespace AmortSchedule
         public DateTime EntryDate { get; }
 
         [Browsable(true)]
+        [DisplayName("Capital Balance")]
+        public decimal CapitalBalance
+        {
+            get
+            {
+                return Capital + Schedule.ScheduleEntries.Where(n => n.EntryDate > EntryDate).Sum(n => n.Capital);
+            }
+        }
+
+        [Browsable(true)]
         [DisplayName("Capital")]
         public decimal Capital
         {
@@ -56,8 +66,10 @@ namespace AmortSchedule
             }
         }
 
+    
 
-        [Browsable(true)]
+
+        [Browsable(false)]
         [DisplayName("Outstanding Capital")]
         public decimal OutstandingCapital
         {
@@ -67,7 +79,7 @@ namespace AmortSchedule
             }
         }
 
-        [Browsable(true)]
+        [Browsable(false)]
         [DisplayName("Outstanding Interest")]
         public decimal OutstandingInterest
         {
@@ -77,7 +89,7 @@ namespace AmortSchedule
             }
         }
 
-        [Browsable(true)]
+        [Browsable(false)]
         [DisplayName("Total")]
         public decimal OutstandingTotal
         {

@@ -10,3 +10,15 @@ E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.Genera
 E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.CopyComplete
 E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.exe
 E:\Personal\Github\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.pdb
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.exe.config
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.exe
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\bin\Debug\Test.pdb
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\bin\Debug\AmortSchedule.dll
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\bin\Debug\AmortSchedule.pdb
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csprojAssemblyReference.cache
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.Form1.resources
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.Properties.Resources.resources
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.GenerateResource.cache
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.CopyComplete
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.exe
+D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.pdb

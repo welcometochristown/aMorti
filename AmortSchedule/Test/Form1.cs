@@ -16,9 +16,19 @@ namespace Test
         public Form1()
         {
             InitializeComponent();
+
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            Refresh();
+        }
+
+        private void Refresh()
+        {
             DataTable dt = new DataTable();
 
-           
+
             //Manual Creation 
             Schedule sManual = new Schedule(DateTime.Now.Date, 1, 100);
 
@@ -30,15 +40,15 @@ namespace Test
             rEntry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Interest, 8.25m);
 
             //Auto Creation 
-            Schedule sAuto = Schedule.Create(new[] { 
+            Schedule sAuto = Schedule.Create(new[] {
                 new ScheduleParameter(ScheduleParameter.ParameterType.STARTDATE, DateTime.Now.Date.ToShortDateString()),
-                new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, "3.45"),
+                new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, "5.44"),
                 new ScheduleParameter(ScheduleParameter.ParameterType.VERSION, "1")
             });
 
             sAuto.Fill(null, new[] {
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.ToShortDateString()),
-                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, "100.00"),
+                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, "1000.00"),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING, "0.00"),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1")
             });
@@ -49,6 +59,11 @@ namespace Test
 
 
             dataGridView1.DataSource = sAuto;
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            Refresh();
         }
     }
 }

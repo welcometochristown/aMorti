@@ -228,7 +228,6 @@ namespace AmortSchedule
                 //get all repayment entry dates
                 IEnumerable<Entry> rEntries = BuildDateTable(1, StartDate, StartDate.AddYears(1), ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH)).Select(n => new Entry { Date = n }).ToList();
 
-                rEntries = rEntries.Skip(1).Take(5).ToList();
 
                 rEntries = GenerateRepayments(ParseParameter<DateTime>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST),
                     rEntries, 1,

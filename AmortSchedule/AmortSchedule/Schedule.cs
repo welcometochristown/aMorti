@@ -6,12 +6,24 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static AmortSchedule.Common;
 
 namespace AmortSchedule
 {
     public class Schedule : System.ComponentModel.IListSource
     {
+
+        public class ScheduleOptions
+        {
+            public int Version { get; set; }
+            public decimal InterestRate { get; set; }
+            public DateTime StartDate { get; set; }
+        }
+
+
         public int Version { get; }
+        public DateTime StartDate { get; }
+        public decimal InterestRate { get; }
 
         /// <summary>
         /// Allow a user to define their own interest calculation function.
@@ -21,17 +33,17 @@ namespace AmortSchedule
         /// <param>IntRate</param>
         /// <return>decimal</return>decimal>
         /// </summary>
-        public Func<DateTime, DateTime, decimal, decimal, int, decimal> InterestCalcFunc => CalcInterest;
-
-        public DateTime StartDate { get; }
-
-        public decimal InterestRate { get; }
+        public Func<DateTime, DateTime, decimal, decimal, int, decimal> InterestCalcFunc => Interest.Calculate;
 
         public List<ScheduleEntry> ScheduleEntries { get; } = new List<ScheduleEntry>();
 
         public bool ContainsListCollection => false;
 
-        public static IEnumerable<ScheduleParameter.ParameterType> RequiredParams = new[] { ScheduleParameter.ParameterType.VERSION, ScheduleParameter.ParameterType.STARTDATE, ScheduleParameter.ParameterType.INTERESTRATE, ScheduleParameter.ParameterType.PRINCIPLEAMOUNT };
+        public static IEnumerable<ScheduleParameter.ParameterType> RequiredParams = new[] { 
+            ScheduleParameter.ParameterType.VERSION, 
+            ScheduleParameter.ParameterType.STARTDATE, 
+            ScheduleParameter.ParameterType.INTERESTRATE
+        };
 
         /// <summary>
         /// Schedule Constructor. Must take start date and interest rate.
@@ -45,6 +57,10 @@ namespace AmortSchedule
             this.InterestRate = interestrate;
             this.StartDate = startdate;
         }
+
+        public Schedule(ScheduleOptions options)
+            :this(options.StartDate, options.InterestRate, options.Version)
+        {    /**/   }
 
         /// <summary>
         /// Add a new entry to the schedule
@@ -138,13 +154,13 @@ namespace AmortSchedule
         /// <typeparam name="T"></typeparam>
         /// <param name="prms"></param>
         /// <param name="type"></param>
-        /// <returns></returns>
+        /// <returns>parsed value or default(T) if not found</returns>
         private static T ParseParameter<T>(IEnumerable<ScheduleParameter> prms, ScheduleParameter.ParameterType type)
         {
             var r = prms.SingleOrDefault(n => n.Type == type);
 
-            if(r == null)
-                throw new Exception($"Missing {type.ToString()} parameter");
+            if (r == null)
+                return default(T);
 
             var converter = TypeDescriptor.GetConverter(typeof(T));
 
@@ -216,25 +232,58 @@ namespace AmortSchedule
         /// <param name="repaymentParameters"></param>
         public void Fill(IEnumerable<SchedulePaymentParameter> paymentParameters, IEnumerable<ScheduleRepaymentParameter> repaymentParameters)
         {
-            if(paymentParameters != null && paymentParameters.Any())
+            if (paymentParameters != null && paymentParameters.Any())
             {
                 //get all payment entry dates
-               // IEnumerable<Entry> pEntries = BuildDateTable().Select(n => new Entry { Date = n });
-
+                // IEnumerable<Entry> pEntries = BuildDateTable().Select(n => new Entry { Date = n });
             }
 
             if (repaymentParameters != null && repaymentParameters.Any())
-            {
-                //get all repayment entry dates
-                IEnumerable<Entry> rEntries = BuildDateTable(1, StartDate, StartDate.AddYears(1), ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH)).Select(n => new Entry { Date = n }).ToList();
+            { 
+                //check we have a repayment option defined
+                int repaymentOption = repaymentParameters.Count(n => n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES || n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
 
+                if (repaymentOption == 0)
+                    throw new Exception("No repayment option specified");
 
-                rEntries = GenerateRepayments(ParseParameter<DateTime>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST),
-                    rEntries, 1,
-                    ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
-                    ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING));
+                if (repaymentOption > 1)
+                    throw new Exception("Too many repayment options specified");
 
-                foreach(var e in rEntries)
+                //how many months?
+                var repaymentOptionDuration = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES);
+
+                //how much to repay each repayment?
+                var repaymentOptionValue = ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
+
+                IEnumerable<Entry> rEntries = default(IEnumerable<Entry>);
+
+                Frequency freq = (Common.Frequency)Enum.Parse(typeof(Common.Frequency), ParseParameter<string>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY));
+
+                //Repay by duration?
+                if (repaymentOptionDuration != 0)
+                {
+                    //which day of the month are we paying?
+                    int dayOfMonth = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH);
+
+                    //get a set of dates based off the start date forward
+                    rEntries = BuildDateTable(freq, StartDate, StartDate.AddFrequency(freq, repaymentOptionDuration), dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
+                    
+                    //generate repayments
+                    rEntries = GenerateRepayments(StartDate, rEntries, freq,
+                                                            ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
+                                                            ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING));
+
+                }
+                else if (repaymentOptionValue != 0)
+                {
+                    rEntries =  GenerateRepayments(StartDate, repaymentOptionValue, freq, ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
+                        ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING));
+                }
+
+                if (rEntries == null || rEntries.Count() == 0)
+                    throw new Exception("Failed to generate any repayment entries");
+
+                foreach (var e in rEntries)
                 {
                     var entry = new ScheduleEntry(this, ScheduleEntry.ScheduleEntryTypeEnum.Repay, e.Date);
                     entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, e.ValueCapital);
@@ -243,19 +292,12 @@ namespace AmortSchedule
                 }
             }
 
-
-
-
-
             ////first thing we need to do is to work out a list of all the entries (this is both payment and repayment entries)
-
-
             //var entries = GenerateDateRepayments(ParseParameter<DateTime>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST),
             //    null,
             //    0,
             //    ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
             //    InterestRate);
-
             ////TODO: Fill here
             //REPAYMENT_CAPITALOUTSTANDING,    //any other amount to be repaid that is not going to be included in the payments in this schedule
             //REPAYMENT_DATEFIRST,             //the first repayment date in this schedule
@@ -271,7 +313,7 @@ namespace AmortSchedule
             public decimal ValueInterest { get; set; }
         }
 
-        private IEnumerable<DateTime> BuildDateTable(int period, DateTime start, DateTime end, int day, bool useStartAsFirst = true)
+        private IEnumerable<DateTime> BuildDateTable(Frequency frequency, DateTime start, DateTime? end, int day, bool useStartAsFirst = true)
         {
             if (day < 1)
                 throw new Exception("Repayment day can't be less than 1");
@@ -284,46 +326,30 @@ namespace AmortSchedule
 
             while (true)
             {
-                DateTime? dt = null;
+                DateTime dt;
 
                 //do we use the start date as the first entry, are we on the first entry?
                 if (useStartAsFirst && !list.Any())
                     dt = start;
                 else
-                    dt = NextDateUsingFrequency(period, dtLast, day);
+                    dt = dtLast.NextDate(frequency, day);
 
                 //if we have gone past the end date then edn
-                if (dt.Value.Date > end)
+                if (end.HasValue && dt.Date > end.Value)
                     break;
 
                 //add day to list
-                list.Add(dt.Value.Date);
+                list.Add(dt.Date);
 
                 //this is now the current date
-                dtLast = dt.Value;
-
+                dtLast = dt;
             }
 
             return list;
         }
 
-        private DateTime NextDateUsingFrequency(int period, DateTime last, int day)
-        {
-            ///TODO:Update this
-            var n = last.AddMonths(period);
-            return new DateTime(n.Year, n.Month, day);
-        }
 
-        /// <summary>
-        /// Returns each repayment date, type of repayment and value
-        /// </summary>
-        /// param name="dateStart" Start repayments from this date forward.
-        /// param name="capitalBalance"
-        /// param name="interestBalance"
-        /// param name="monthlyMultiplier"
-        /// param name="repaymentdates"
-        /// <returns></returns>
-        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, IEnumerable<Entry> entries, decimal monthlyMultiplier, decimal capitalBalance, decimal interestBalance)
+        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, IEnumerable<Entry> entries, Frequency frequency , decimal capitalBalance, decimal interestBalance)
         {
             //how many do we have?
             int instances = entries.Count();
@@ -344,7 +370,10 @@ namespace AmortSchedule
             {
                 //geometric series
                 //https://math.stackexchange.com/questions/2521313/mathmatical-formula-possible/2521351?noredirect=1#comment5206959_2521351
-                decimal ir = (1.0m + (InterestRate / 100.0m));
+
+                //ratio based on a 12 month year
+                decimal yearly_month_ratio = 1200 / Common.GetMonthlyMultiplier(frequency);
+                decimal ir = (1.0m + (InterestRate / yearly_month_ratio));
                 decimal x = capitalBalance * ir * ((1.0m / ir) - 1.0m);
                 decimal y = (1.0m / Convert.ToDecimal(Math.Pow(Convert.ToDouble(ir), Convert.ToDouble(instances)))) - 1.0m;
                 ideal_total_repayment = x / y;
@@ -377,13 +406,13 @@ namespace AmortSchedule
 
                 //get interest from the core microservice.
                 decimal interestAccrued = interestDue;
-
+                
                 //when should the interest accrual end?
                 var interest_accrual_end = entry.Date.AddDays(-1);
 
                 //only days after the first entry will accrue interest
-                if (dtLast != entry.Date)
-                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 364);
+                if (dateStart != entry.Date)
+                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 365);
 
                 //rounded interest
                 interestDue = 0;
@@ -417,69 +446,16 @@ namespace AmortSchedule
             return entries;
         }
 
-
-        private decimal CalcInterest(DateTime dtFrom, DateTime dtTo, decimal balance, decimal intRate, int YEARDAYCOUNT)
+        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, decimal repayment_capital_value, Frequency frequency, decimal capitalBalance, decimal interestBalance)
         {
-            // return 0;
-            //var iRate = intRate / 100;
-
-            var numDaysInRange = Math.Abs((dtTo.Date - dtFrom.Date).Days);
-            decimal dailyIR = (intRate / 100) / YEARDAYCOUNT;
-            decimal dailyInterest = dailyIR * Math.Max(0, balance);
-            decimal interest = dailyInterest * numDaysInRange;
-
-            numDaysInRange += 1;
-
-            return interest;
-
-            //var i = (balance * iRate) / YEARDAYCOUNT;
-            //var ir = i * days;
-            //return ir;
+            throw new NotImplementedException();
         }
 
 
 
-        //public static InterestQueryRowResult QuickInterestCalculation(int daysInYear, decimal balance, decimal interestRate, DateTime dtFrom, DateTime dtTo, decimal? dailyRounding = null)
-        //{
-        //    var result = new InterestQueryRowResult();
 
-        //    //get days in range
-        //    int numDaysInRange = (dtTo.Date - dtFrom.Date).Days;
-        //    decimal dailyIR = (interestRate / 100) / daysInYear;
 
-        //    //negative balances should accrue 0 interest
-        //    decimal dailyInterest = dailyIR * Math.Max(0, balance);
-
-        //    if (dailyRounding != null)
-        //        dailyInterest = Convert.ToDecimal(Math.Round(Convert.ToDouble(dailyInterest), Convert.ToInt16(dailyRounding.Value)));
-
-        //    //check we arent trying to get interest for same day
-        //    if (numDaysInRange < 0)
-        //        throw new Exception("Calculating Interest on a negative range is not allowed.");
-
-        //    //DateStart and DateEnd for interest accruals are inclusive. 
-        //    // Example (These are the dates stored in the database) :
-        //    //   dtFrom = 2018-01-01
-        //    //   dtTo = 2018-01-05
-        //    // If we use (dtTo.Date - dtFrom.Date).Days logic, then we will get 4 days. This is wrong, we need to include the 5th as well. 
-        //    // So lets add a day here.
-        //    numDaysInRange += 1;
-
-        //    //calculate the interest over these days
-        //    decimal interest = dailyInterest * numDaysInRange;
-
-        //    result.Balance = balance;
-        //    result.DateStart = dtFrom;
-        //    result.DateEnd = dtTo;
-        //    result.AccruedInterest = interest;
-        //    result.DailyInterest = dailyInterest;
-        //    result.Days = numDaysInRange;
-        //    result.InterestRate = interestRate;
-        //    result.DailyInterestRate = dailyIR;
-
-        //    return result;
-        //}
-
+     
 
         /// <summary>
         /// Total amount outstanding on this schedule.

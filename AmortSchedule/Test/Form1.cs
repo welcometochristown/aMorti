@@ -26,8 +26,12 @@ namespace Test
 
         private void Refresh()
         {
-            DataTable dt = new DataTable();
+            Common.Frequency frequency = Common.Frequency.MONTHLY;
+            
+            if(!string.IsNullOrWhiteSpace(cmbfreq.Text))
+                frequency = (Common.Frequency)Enum.Parse(typeof(Common.Frequency), cmbfreq.Text);
 
+            DataTable dt = new DataTable();
 
             //Manual Creation 
             Schedule sManual = new Schedule(DateTime.Now.Date, 1, 100);
@@ -42,16 +46,25 @@ namespace Test
             //Auto Creation 
             Schedule sAuto = Schedule.Create(new[] {
                 new ScheduleParameter(ScheduleParameter.ParameterType.STARTDATE, DateTime.Now.Date.ToShortDateString()),
-                new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, "5.44"),
+                new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, "5.0"),
                 new ScheduleParameter(ScheduleParameter.ParameterType.VERSION, "1")
             });
 
-            sAuto.Fill(null, new[] {
-                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.ToShortDateString()),
+            List<ScheduleRepaymentParameter> repaymentParams = new[] {
+                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(1).ToShortDateString()),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, "1000.00"),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING, "0.00"),
-                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1")
-            });
+                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1"),
+                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString())
+            }.ToList();
+
+            if(radioMnths.Checked)
+                repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES, numericUpDown1.Value.ToString()));
+            //else if(radiorepayvalue.Checked)
+            //    repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE, numericUpDown2.Value.ToString()));
+
+
+            sAuto.Fill(null, repaymentParams);
 
             //Mixed Creation 
             //  Schedule sMixed = new Schedule(DateTime.Now.Date, 1, 100);
@@ -64,6 +77,8 @@ namespace Test
         private void Form1_Load(object sender, EventArgs e)
         {
             Refresh();
+          
+            cmbfreq.Items.AddRange(Enum.GetValues(typeof(Common.Frequency)).Cast<Common.Frequency>().Select(n => n.ToString()).ToArray());
         }
     }
 }

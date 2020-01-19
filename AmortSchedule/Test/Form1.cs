@@ -52,7 +52,7 @@ namespace Test
 
             List<ScheduleRepaymentParameter> repaymentParams = new[] {
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(1).ToShortDateString()),
-                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, "1000.00"),
+                new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, NumrepayValue.Value.ToString()),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING, "0.00"),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1"),
                 new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString())
@@ -60,8 +60,8 @@ namespace Test
 
             if(radioMnths.Checked)
                 repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES, numericUpDown1.Value.ToString()));
-            //else if(radiorepayvalue.Checked)
-            //    repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE, numericUpDown2.Value.ToString()));
+            else if(radiorepayvalue.Checked)
+               repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE, numericUpDown2.Value.ToString()));
 
 
             sAuto.Fill(null, repaymentParams);

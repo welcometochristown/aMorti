@@ -35,9 +35,11 @@
             this.radiorepayvalue = new System.Windows.Forms.RadioButton();
             this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.cmbfreq = new System.Windows.Forms.ComboBox();
+            this.NumrepayValue = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NumrepayValue)).BeginInit();
             this.SuspendLayout();
             // 
             // dataGridView1
@@ -60,7 +62,12 @@
             // 
             // numericUpDown1
             // 
-            this.numericUpDown1.Location = new System.Drawing.Point(478, 527);
+            this.numericUpDown1.Location = new System.Drawing.Point(598, 531);
+            this.numericUpDown1.Maximum = new decimal(new int[] {
+            999999,
+            0,
+            0,
+            0});
             this.numericUpDown1.Name = "numericUpDown1";
             this.numericUpDown1.Size = new System.Drawing.Size(120, 20);
             this.numericUpDown1.TabIndex = 2;
@@ -74,7 +81,7 @@
             // 
             this.radioMnths.AutoSize = true;
             this.radioMnths.Checked = true;
-            this.radioMnths.Location = new System.Drawing.Point(401, 529);
+            this.radioMnths.Location = new System.Drawing.Point(521, 533);
             this.radioMnths.Name = "radioMnths";
             this.radioMnths.Size = new System.Drawing.Size(71, 17);
             this.radioMnths.TabIndex = 3;
@@ -85,7 +92,7 @@
             // radiorepayvalue
             // 
             this.radiorepayvalue.AutoSize = true;
-            this.radiorepayvalue.Location = new System.Drawing.Point(640, 530);
+            this.radiorepayvalue.Location = new System.Drawing.Point(724, 533);
             this.radiorepayvalue.Name = "radiorepayvalue";
             this.radiorepayvalue.Size = new System.Drawing.Size(109, 17);
             this.radiorepayvalue.TabIndex = 3;
@@ -94,7 +101,12 @@
             // 
             // numericUpDown2
             // 
-            this.numericUpDown2.Location = new System.Drawing.Point(755, 530);
+            this.numericUpDown2.Location = new System.Drawing.Point(839, 533);
+            this.numericUpDown2.Maximum = new decimal(new int[] {
+            999999,
+            0,
+            0,
+            0});
             this.numericUpDown2.Name = "numericUpDown2";
             this.numericUpDown2.Size = new System.Drawing.Size(120, 20);
             this.numericUpDown2.TabIndex = 2;
@@ -108,10 +120,27 @@
             // 
             this.cmbfreq.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbfreq.FormattingEnabled = true;
-            this.cmbfreq.Location = new System.Drawing.Point(132, 525);
+            this.cmbfreq.Location = new System.Drawing.Point(340, 529);
             this.cmbfreq.Name = "cmbfreq";
-            this.cmbfreq.Size = new System.Drawing.Size(243, 21);
+            this.cmbfreq.Size = new System.Drawing.Size(155, 21);
             this.cmbfreq.TabIndex = 4;
+            // 
+            // NumrepayValue
+            // 
+            this.NumrepayValue.Location = new System.Drawing.Point(214, 529);
+            this.NumrepayValue.Maximum = new decimal(new int[] {
+            999999,
+            0,
+            0,
+            0});
+            this.NumrepayValue.Name = "NumrepayValue";
+            this.NumrepayValue.Size = new System.Drawing.Size(120, 20);
+            this.NumrepayValue.TabIndex = 2;
+            this.NumrepayValue.Value = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
             // 
             // Form1
             // 
@@ -121,6 +150,7 @@
             this.Controls.Add(this.cmbfreq);
             this.Controls.Add(this.radiorepayvalue);
             this.Controls.Add(this.radioMnths);
+            this.Controls.Add(this.NumrepayValue);
             this.Controls.Add(this.numericUpDown2);
             this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.button1);
@@ -131,6 +161,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.NumrepayValue)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -145,6 +176,7 @@
         private System.Windows.Forms.RadioButton radiorepayvalue;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
         private System.Windows.Forms.ComboBox cmbfreq;
+        private System.Windows.Forms.NumericUpDown NumrepayValue;
     }
 }
 

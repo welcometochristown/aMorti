@@ -19,7 +19,6 @@ namespace AmortSchedule
             REPAYMENT_INTERESTOUTSTANDING,   //any other amount to be repaid that is not going to be included in the payments in this schedule
             REPAYMENT_DATEFIRST,             //the first repayment date in this schedule
             REPAYMENT_DAYOFMONTH,            //day to repay, will use last day if the month has less days (e.g 31st will use 30th for April)
-            REPAYMENT_DAYENDOFMONTH,         //true or false whether to use last day of the month always (overrides [REPAYMENTDAYOFMONTH])
             REPAYMENT_FREQUENCY,                  //daily, weekly,bi-weekly, monthly, bi-monthly, yearly, bi-yearly
 
             //mutally exclusive repayment options. either you specify duration of schedule or the amount you want to pay each rapyment

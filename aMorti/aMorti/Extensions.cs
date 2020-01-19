@@ -15,7 +15,7 @@ namespace aMorti
             return new DateTime(n.Year, n.Month, Math.Min(dayofmonth, DateTime.DaysInMonth(n.Year, n.Month)));
         }
 
-        public static DateTime AddFrequency(this DateTime dt, Frequency frequency, int increments)
+        public static DateTime AddFrequency(this DateTime dt, int increments, Frequency frequency)
         {
             switch (frequency)
             {
@@ -26,11 +26,11 @@ namespace aMorti
                 case Frequency.QUARTERLY: return dt.AddMonths(3 * increments);
                 case Frequency.YEARY: return dt.AddYears(1 * increments);
                 case Frequency.BI_YEARLY: return dt.AddYears(2 * increments);
-                default: return dt;
+                default: throw new Exception($"Invalid Frequency - {frequency.ToString()}");
             }
         }
 
-        public static DateTime NextDate(this DateTime dt, Frequency frequency, int dayofmonth)
+        public static DateTime AddFrequency(this DateTime dt, Frequency frequency, int dayofmonth)
         {
             switch(frequency)
             {
@@ -41,7 +41,7 @@ namespace aMorti
                 case Frequency.QUARTERLY: return dt.AddMonths(3, dayofmonth);
                 case Frequency.YEARY: return dt.AddYears(1);
                 case Frequency.BI_YEARLY: return dt.AddYears(2);
-                default: return dt;
+               default: throw new Exception($"Invalid Frequency - {frequency.ToString()}");
             }
         
         }

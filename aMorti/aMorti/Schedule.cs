@@ -12,7 +12,6 @@ namespace aMorti
 {
     public class Schedule : System.ComponentModel.IListSource
     {
-
         public class ScheduleOptions
         {
             public int Version { get; set; }
@@ -278,7 +277,7 @@ namespace aMorti
                 {
               
                     //get a set of dates based off the start date forward
-                    rEntries = BuildDateTable(freq, StartDate, StartDate.AddFrequency(freq, repaymentOptionDuration), dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
+                    rEntries = BuildDateTable(freq, StartDate, StartDate.AddFrequency(repaymentOptionDuration, freq), dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
                     
                     //generate repayments
                     rEntries = GenerateRepayments(StartDate, rEntries, freq,
@@ -326,7 +325,7 @@ namespace aMorti
                 if (useStartAsFirst && !list.Any())
                     dt = start;
                 else
-                    dt = dtLast.NextDate(frequency, day);
+                    dt = dtLast.AddFrequency(frequency, day);
 
                 //if we have gone past the end date then edn
                 if (end.HasValue && dt.Date > end.Value)
@@ -487,7 +486,7 @@ namespace aMorti
                 entry.ValueCapital = Math.Round(capitalValue, 2);
 
                 dtLast = dt;
-                dt = dtLast.NextDate(frequency, dayofmonth);
+                dt = dtLast.AddFrequency(frequency, dayofmonth);
 
                 entries.Add(entry);
             }

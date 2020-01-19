@@ -80,9 +80,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AmortSchedule\AmortSchedule.csproj">
+    <ProjectReference Include="..\aMorti\aMorti.csproj">
       <Project>{5288f4ae-e053-49f1-bf93-3b01f3e380e2}</Project>
-      <Name>AmortSchedule</Name>
+      <Name>aMorti</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

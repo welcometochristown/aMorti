@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static AmortSchedule.Common;
+using static aMorti.Common;
 
-namespace AmortSchedule
+namespace aMorti
 {
     public static class Extensions
     {

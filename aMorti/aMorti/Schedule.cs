@@ -6,9 +6,9 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static AmortSchedule.Common;
+using static aMorti.Common;
 
-namespace AmortSchedule
+namespace aMorti
 {
     public class Schedule : System.ComponentModel.IListSource
     {

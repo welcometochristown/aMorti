@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AmortSchedule", "AmortSchedule\AmortSchedule.csproj", "{5288F4AE-E053-49F1-BF93-3B01F3E380E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aMorti", "aMorti\aMorti.csproj", "{5288F4AE-E053-49F1-BF93-3B01F3E380E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{A6DA625C-1F23-402D-8FA8-586F8E03828D}"
 EndProject

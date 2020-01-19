@@ -1,2 +1,2 @@
-# AmortSchedule
+# aMorti
 Amortization Schedule

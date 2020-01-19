@@ -22,3 +22,15 @@ D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.GenerateResou
 D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.csproj.CopyComplete
 D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.exe
 D:\Code\Git\AmortSchedule\AmortSchedule\Test\obj\Debug\Test.pdb
+D:\Code\Git\aMorti\aMorti\Test\bin\Debug\Test.exe.config
+D:\Code\Git\aMorti\aMorti\Test\bin\Debug\Test.exe
+D:\Code\Git\aMorti\aMorti\Test\bin\Debug\Test.pdb
+D:\Code\Git\aMorti\aMorti\Test\bin\Debug\aMorti.dll
+D:\Code\Git\aMorti\aMorti\Test\bin\Debug\aMorti.pdb
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.csprojAssemblyReference.cache
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.Form1.resources
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.Properties.Resources.resources
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.csproj.GenerateResource.cache
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.csproj.CopyComplete
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.exe
+D:\Code\Git\aMorti\aMorti\Test\obj\Debug\Test.pdb

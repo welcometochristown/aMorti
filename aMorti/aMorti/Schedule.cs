@@ -352,8 +352,6 @@ namespace aMorti
                         entries.AddRange(GenerateRepayments(movement.Date, repaymentOptionValue, freq, dayOfMonth, capitalBalance, interestBalance));
                     }                   
                 }
-
-
             }
             else
             {

@@ -1,5 +1,0 @@
-D:\Code\Git\aMorti\aMorti\aMorti\bin\Debug\aMorti.dll
-D:\Code\Git\aMorti\aMorti\aMorti\bin\Debug\aMorti.pdb
-D:\Code\Git\aMorti\aMorti\aMorti\obj\Debug\aMorti.dll
-D:\Code\Git\aMorti\aMorti\aMorti\obj\Debug\aMorti.pdb
-D:\Code\Git\aMorti\aMorti\aMorti\obj\Debug\aMorti.csprojAssemblyReference.cache

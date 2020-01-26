@@ -80,5 +80,16 @@ namespace Test
           
             cmbfreq.Items.AddRange(Enum.GetValues(typeof(Common.Frequency)).Cast<Common.Frequency>().Select(n => n.ToString()).ToArray());
         }
+
+        private void dataGridView1_SelectionChanged(object sender, EventArgs e)
+        {
+            var cells = dataGridView1.SelectedCells.Cast<DataGridViewTextBoxCell>();
+
+            if (cells.Any(n => !(n.Value is decimal)))
+                label1.Text = "NaN";
+            else
+                label1.Text = cells.Sum(n => (decimal)n.Value).ToString("#,##0.00");
+
+        }
     }
 }

@@ -21,13 +21,34 @@ namespace aMorti
 
         private class Entry
         {
+            public enum EntryTypeEnum
+            {
+                Pay = 0, Repay = 1, Outstanding = 2
+            }
+
+            public EntryTypeEnum Type { get; set; }
             public DateTime Date { get; set; }
             public decimal ValueCapital { get; set; }
+            public decimal ValueCapitalSigned 
+            {
+                get
+                {
+                    return Type == EntryTypeEnum.Repay ? -ValueCapital : ValueCapital;
+                }
+            }
+
             public decimal ValueInterest { get; set; }
+            public decimal ValueInterestSigned
+            {
+                get
+                {
+                    return Type == EntryTypeEnum.Repay ? -ValueInterest : ValueInterest;
+                }
+            }
 
             public override string ToString()
             {
-                return $"{Date.ToShortDateString()}:{ValueCapital}:{ValueInterest}->{ValueCapital + ValueInterest}";
+                return $"{Date.ToShortDateString()}:{ValueCapitalSigned}:{ValueInterestSigned}->{ValueCapitalSigned + ValueInterestSigned}";
             }
         }
 
@@ -242,6 +263,18 @@ namespace aMorti
         /// <param name="repaymentParameters"></param>
         public void Fill(IEnumerable<SchedulePaymentParameter> paymentParameters, IEnumerable<ScheduleRepaymentParameter> repaymentParameters)
         {
+            List<Entry> entries = new List<Entry>();
+            List<Entry> balanceMovements = new List<Entry>();
+
+            //test payment 
+            balanceMovements.Add(new Entry
+            {
+                Date = new DateTime(2020, 3, 15),
+                ValueCapital = 50,
+                ValueInterest = 0,
+                Type = Entry.EntryTypeEnum.Pay
+            });
+
             if (paymentParameters != null && paymentParameters.Any())
             {
                 //get all payment entry dates
@@ -251,12 +284,12 @@ namespace aMorti
             if (repaymentParameters != null && repaymentParameters.Any())
             { 
                 //check we have a repayment option defined
-                int repaymentOption = repaymentParameters.Count(n => n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES || n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
+                int repaymentOptionCount = repaymentParameters.Count(n => n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES || n.Type == ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
 
-                if (repaymentOption == 0)
+                if (repaymentOptionCount == 0)
                     throw new Exception("No repayment option specified");
 
-                if (repaymentOption > 1)
+                if (repaymentOptionCount > 1)
                     throw new Exception("Too many repayment options specified");
 
                 //how many months?
@@ -265,46 +298,79 @@ namespace aMorti
                 //how much to repay each repayment?
                 var repaymentOptionValue = ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
 
-                IEnumerable<Entry> rEntries = default(IEnumerable<Entry>);
-
                 Frequency freq = (Common.Frequency)Enum.Parse(typeof(Common.Frequency), ParseParameter<string>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY));
                 
                 //which day of the month are we paying?
                 int dayOfMonth = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH);
 
-                //Repay by duration?
-                if (repaymentOptionDuration != 0)
-                {
-              
-                    //get a set of dates based off the start date forward
-                    rEntries = BuildDateTable(freq, StartDate, StartDate.AddFrequency(repaymentOptionDuration, freq), dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
-                    
-                    //generate repayments
-                    rEntries = GenerateRepayments(StartDate, rEntries, freq,
-                                                            ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
-                                                            ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING));
+                decimal capitalOutstanding = ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING);
+                decimal interestOutstanding = ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING);
 
-                }
-                else if (repaymentOptionValue != 0)
+                if (capitalOutstanding > 0 || interestOutstanding > 0)
                 {
-                    rEntries =  GenerateRepayments(StartDate, repaymentOptionValue, freq, dayOfMonth, ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING),
-                        ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING));
+                    //repay any outstanding balances
+                    balanceMovements.Add(new Entry
+                    {
+                        ValueCapital = capitalOutstanding,
+                        ValueInterest = interestOutstanding,
+                        Date = StartDate,
+                        Type = Entry.EntryTypeEnum.Outstanding
+                    });
                 }
 
-                if (rEntries == null || rEntries.Count() == 0)
-                    throw new Exception("Failed to generate any repayment entries");
 
-                foreach (var e in rEntries)
+                bool instanced_repayments = repaymentOptionDuration > 0;
+                bool valued_repayments = repaymentOptionValue > 0;
+
+                foreach (var movement in balanceMovements.OrderBy(n => n.Date))
                 {
-                    var entry = new ScheduleEntry(this, ScheduleEntry.ScheduleEntryTypeEnum.Repay, e.Date);
-                    entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, e.ValueCapital);
-                    entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Interest, e.ValueInterest);
-                    ScheduleEntries.Add(entry);
+                    //add this pay/outsanding entry
+                    entries.RemoveAll(n => n.Date > movement.Date);
+                    entries.Add(movement);
+
+                    decimal capitalBalance = entries.Where(n => n.Date <= movement.Date).Sum(n => n.ValueCapitalSigned);
+                    decimal interestBalance = 0.0m;
+
+                    //Repay by duration?
+                    if (instanced_repayments)
+                    {
+                        var instances = repaymentOptionDuration - entries.Count(n => n.Type == Entry.EntryTypeEnum.Repay);
+
+                        if (instances == 0)
+                            throw new Exception("Not enough instances to cover full term");
+
+                        //get a set of dates based off the start date forward
+                        var r = BuildDateTable(freq, movement.Date, movement.Date.AddFrequency(instances, freq), dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
+                        var e = GenerateRepayments(movement.Date, r, freq, capitalBalance, interestBalance);
+
+                        //generate repayments
+                        entries.AddRange(e);
+
+                    }
+                    else if (valued_repayments)
+                    {
+                        entries.AddRange(GenerateRepayments(movement.Date, repaymentOptionValue, freq, dayOfMonth, capitalBalance, interestBalance));
+                    }                   
                 }
+
+
+            }
+            else
+            {
+                entries.AddRange(balanceMovements.Where(n => n.Type == Entry.EntryTypeEnum.Pay));
+            }
+
+            ScheduleEntries.Clear();
+            foreach (var e in entries.Where(n => n.Type != Entry.EntryTypeEnum.Outstanding))
+            {
+                var entry = new ScheduleEntry(this, (ScheduleEntry.ScheduleEntryTypeEnum)e.Type, e.Date);
+                entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, e.ValueCapital);
+                entry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Interest, e.ValueInterest);
+                ScheduleEntries.Add(entry);
             }
         }
 
- 
+
 
         private IEnumerable<DateTime> BuildDateTable(Frequency frequency, DateTime start, DateTime? end, int day, bool useStartAsFirst = true)
         {
@@ -421,6 +487,7 @@ namespace aMorti
                     capitalValue = ideal_total_repayment - entry.ValueInterest;
 
                 entry.ValueCapital = Math.Round(capitalValue, 2);
+                entry.Type = Entry.EntryTypeEnum.Repay;
 
                 dtLast = entry.Date;
             }
@@ -481,9 +548,10 @@ namespace aMorti
                 else if (currentBalance + entry.ValueInterest > ideal_total_repayment)
                     capitalValue = currentBalance - entry.ValueInterest;
                 else
-                    capitalValue = currentBalance + entry.ValueInterest;
+                    capitalValue = currentBalance;
 
                 entry.ValueCapital = Math.Round(capitalValue, 2);
+                entry.Type = Entry.EntryTypeEnum.Repay;
 
                 dtLast = dt;
                 dt = dtLast.AddFrequency(frequency, dayofmonth);

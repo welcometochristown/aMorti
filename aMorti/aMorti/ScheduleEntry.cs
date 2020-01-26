@@ -11,8 +11,8 @@ namespace aMorti
     {
         public enum ScheduleEntryTypeEnum
         {
-            Pay,
-            Repay
+            Pay = 0,
+            Repay =1
         }
 
         [Browsable(false)]
@@ -32,11 +32,11 @@ namespace aMorti
         {
             get
             {
-                return Capital + Schedule.ScheduleEntries.Where(n => n.EntryDate > EntryDate).Sum(n => n.Capital);
+                return Capital + Schedule.ScheduleEntries.Where(n => n.EntryDate > EntryDate).Sum(n => n.EntryType == ScheduleEntryTypeEnum.Repay ? n.Capital : -n.Capital);
             }
         }
 
-        [Browsable(true)]
+        [Browsable(false)]
         [DisplayName("Capital")]
         public decimal Capital
         {
@@ -47,6 +47,17 @@ namespace aMorti
         }
 
         [Browsable(true)]
+        [DisplayName("Capital")]
+        public decimal CapitalSigned
+        {
+            get
+            {
+                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Capital).Sum(n => n.Value) * (EntryType == ScheduleEntryTypeEnum.Repay ? -1 : 1);
+            }
+        }
+
+
+        [Browsable(false)]
         [DisplayName("Interest")]
         public decimal Interest
         {
@@ -57,6 +68,16 @@ namespace aMorti
         }
 
         [Browsable(true)]
+        [DisplayName("Interest")]
+        public decimal InterestSigned
+        {
+            get
+            {
+                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Interest).Sum(n => n.Value) * (EntryType == ScheduleEntryTypeEnum.Repay ? -1 : 1);
+            }
+        }
+
+        [Browsable(false)]
         [DisplayName("Total")]
         public decimal Total
         {
@@ -66,7 +87,16 @@ namespace aMorti
             }
         }
 
-    
+        [Browsable(true)]
+        [DisplayName("Total")]
+        public decimal TotalSigned
+        {
+            get
+            {
+                return CapitalSigned + InterestSigned;
+            }
+        }
+
 
 
         [Browsable(false)]
@@ -126,6 +156,11 @@ namespace aMorti
         public decimal Outstanding(ScheduleEntryTransaction.TransactionType type)
         {
             return ScheduleEntryTransactions.Where(n => n.Type == type).Sum(n => n.Outstanding);
+        }
+
+        public override string ToString()
+        {
+            return $"{EntryDate.ToShortDateString()} : {EntryType.ToString()} {Capital} Capital and {Interest} Interest";
         }
 
     }

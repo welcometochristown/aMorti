@@ -10,6 +10,7 @@ namespace aMorti
     {
         public enum ParameterType
         {
+            //schedule options
             VERSION,
             STARTDATE,
             INTERESTRATE,
@@ -23,7 +24,9 @@ namespace aMorti
 
             //mutally exclusive repayment options. either you specify duration of schedule or the amount you want to pay each rapyment
             REPAYMENT_OPTION_FREQUENCY_INSTANCES,   //how many months is the term of repayment
-            REPAYMENT_OPTION_REPAY_VALUE              //how much to pay every <REPAYMENT_TERM>
+            REPAYMENT_OPTION_REPAY_VALUE,            //how much to pay every <REPAYMENT_TERM>
+
+            PAYMENT_CAPITAL
         }
 
         public ScheduleParameter(ParameterType type, string value)

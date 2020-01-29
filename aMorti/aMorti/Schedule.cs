@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -180,7 +181,7 @@ namespace aMorti
         }
 
         /// <summary>
-        /// parse parameters from string values
+        /// parse parameters from single string values
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="prms"></param>
@@ -188,17 +189,40 @@ namespace aMorti
         /// <returns>parsed value or default(T) if not found</returns>
         private static T ParseParameter<T>(IEnumerable<ScheduleParameter> prms, ScheduleParameter.ParameterType type)
         {
-            var r = prms.SingleOrDefault(n => n.Type == type);
+           return ParseParameter<T>(prms.SingleOrDefault(n => n.Type == type));
+        }
 
-            if (r == null)
+        private static T ParseParameter<T>(ScheduleParameter prm)
+        {
+            if (prm == null)
                 return default(T);
 
             var converter = TypeDescriptor.GetConverter(typeof(T));
 
             if (converter != null)
-                return (T)converter.ConvertFromString(r.Value);
+                return (T)converter.ConvertFromString(prm.Value);
 
             throw new Exception($"invalid {nameof(T)} value");
+        }
+
+        private static T ParseParameterJSON<T>(IEnumerable<ScheduleParameter> prms, ScheduleParameter.ParameterType type)
+        {
+            return ParseParameterJSON<T>(prms.SingleOrDefault(n => n.Type == type));
+        }
+
+        private static T ParseParameterJSON<T>(ScheduleParameter prm)
+        {
+            return JsonConvert.DeserializeObject<T>(prm.Value);
+
+        }
+        private static Tuple<T, N> ParseParameterJSON<T, N>(IEnumerable<ScheduleParameter> prms, ScheduleParameter.ParameterType type)
+        {
+            return ParseParameterJSON<T, N>(prms.SingleOrDefault(n => n.Type == type));
+        }
+
+        private static Tuple<T, N> ParseParameterJSON<T, N>(ScheduleParameter prm)
+        {
+            return JsonConvert.DeserializeObject<Tuple<T, N>>(prm.Value);
         }
 
 
@@ -266,19 +290,20 @@ namespace aMorti
             List<Entry> entries = new List<Entry>();
             List<Entry> balanceMovements = new List<Entry>();
 
-            //test payment 
-            balanceMovements.Add(new Entry
-            {
-                Date = new DateTime(2020, 3, 15),
-                ValueCapital = 50,
-                ValueInterest = 0,
-                Type = Entry.EntryTypeEnum.Pay
-            });
-
             if (paymentParameters != null && paymentParameters.Any())
             {
-                //get all payment entry dates
-                // IEnumerable<Entry> pEntries = BuildDateTable().Select(n => new Entry { Date = n });
+                foreach(var p in paymentParameters.Where(n => n.Type == ScheduleParameter.ParameterType.PAYMENT_CAPITAL))
+                {
+                    var prm = ParseParameterJSON<DateTime, decimal>(p);
+                    var e = new Entry
+                    {
+                        Date = prm.Item1,
+                        ValueCapital = prm.Item2,
+                        Type = Entry.EntryTypeEnum.Pay
+                    };
+
+                    balanceMovements.Add(e);
+                }
             }
 
             if (repaymentParameters != null && repaymentParameters.Any())
@@ -318,7 +343,7 @@ namespace aMorti
                     });
                 }
 
-
+                //repayment option
                 bool instanced_repayments = repaymentOptionDuration > 0;
                 bool valued_repayments = repaymentOptionValue > 0;
 
@@ -334,7 +359,7 @@ namespace aMorti
                     //Repay by duration?
                     if (instanced_repayments)
                     {
-                        var instances = repaymentOptionDuration - entries.Count(n => n.Type == Entry.EntryTypeEnum.Repay);
+                        var instances = Math.Max(0, repaymentOptionDuration - entries.Count(n => n.Type == Entry.EntryTypeEnum.Repay));
 
                         if (instances == 0)
                             throw new Exception("Not enough instances to cover full term");

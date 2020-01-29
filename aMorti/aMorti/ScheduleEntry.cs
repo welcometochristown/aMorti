@@ -32,7 +32,7 @@ namespace aMorti
         {
             get
             {
-                return Capital + Schedule.ScheduleEntries.Where(n => n.EntryDate > EntryDate).Sum(n => n.EntryType == ScheduleEntryTypeEnum.Repay ? n.Capital : -n.Capital);
+                return Schedule.ScheduleEntries.Where(n => n.EntryDate >= EntryDate).Sum(n => -n.CapitalSigned);
             }
         }
 

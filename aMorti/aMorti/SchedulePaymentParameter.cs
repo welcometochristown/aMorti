@@ -8,6 +8,7 @@ namespace aMorti
 {
     public class SchedulePaymentParameter : ScheduleParameter
     {
+
         public SchedulePaymentParameter(ScheduleParameter.ParameterType type, string value)
             :base(type, value)
         {

@@ -97,8 +97,6 @@ namespace aMorti
             }
         }
 
-
-
         [Browsable(false)]
         [DisplayName("Outstanding Capital")]
         public decimal OutstandingCapital

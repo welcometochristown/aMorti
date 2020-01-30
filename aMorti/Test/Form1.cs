@@ -23,7 +23,7 @@ namespace Test
 
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Button1_Click(object sender, EventArgs e)
         {
             Refresh();
         }
@@ -40,7 +40,7 @@ namespace Test
                 //Auto Creation 
                 schedule = Schedule.Create(new[] {
                     new ScheduleParameter(ScheduleParameter.ParameterType.STARTDATE, DateTime.Now.Date.ToShortDateString()),
-                    new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, "5.0"),
+                    new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, numIR.Value.ToString()),
                     new ScheduleParameter(ScheduleParameter.ParameterType.VERSION, "1")
                 });
 
@@ -50,11 +50,12 @@ namespace Test
                 }.ToList();
 
                 List<ScheduleRepaymentParameter> repaymentParams = new[] {
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(1).ToShortDateString()),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(4).ToShortDateString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, NumrepayValue.Value.ToString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1"),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString()),
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString())
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString()),
+
                 }.ToList();
 
                 if (radioMnths.Checked)
@@ -94,9 +95,9 @@ namespace Test
             var cells = dataGridView1.SelectedCells.Cast<DataGridViewTextBoxCell>();
 
             if (cells.Any(n => !(n.Value is decimal)))
-                label1.Text = "NaN";
+                label1.Text = $"({cells.Count().ToString()})";
             else
-                label1.Text = cells.Sum(n => (decimal)n.Value).ToString("#,##0.00");
+                label1.Text = $"{cells.Sum(n => (decimal)n.Value).ToString("#,##0.00")} ({cells.Count().ToString()})";
 
         }
     }

@@ -63,14 +63,17 @@ namespace aMorti
         /// <param>DateTo</param>
         /// <param>Balance</param>
         /// <param>IntRate</param>
-        /// <return>decimal</return>decimal>
+        /// <return>decimal</return>
         /// </summary>
         public Func<DateTime, DateTime, decimal, decimal, int, decimal> InterestCalcFunc => Interest.Calculate;
 
+        //Schedule Entries On This Schedule
         public List<ScheduleEntry> ScheduleEntries { get; } = new List<ScheduleEntry>();
 
+        //IListSource
         public bool ContainsListCollection => false;
 
+        //Required Parameters For A Schedule
         public static IEnumerable<ScheduleParameter.ParameterType> RequiredParams = new[] { 
             ScheduleParameter.ParameterType.VERSION, 
             ScheduleParameter.ParameterType.STARTDATE, 
@@ -90,6 +93,10 @@ namespace aMorti
             this.StartDate = startdate;
         }
 
+        /// <summary>
+        /// Schedule Constructor. Constructed from [options]
+        /// </summary>
+        /// <param name="options"></param>
         public Schedule(ScheduleOptions options)
             :this(options.StartDate, options.InterestRate, options.Version)
         {    /**/   }
@@ -192,10 +199,16 @@ namespace aMorti
            return ParseParameter<T>(prms.SingleOrDefault(n => n.Type == type));
         }
 
+        /// <summary>
+        /// Parse a paramter
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="prm"></param>
+        /// <returns></returns>
         private static T ParseParameter<T>(ScheduleParameter prm)
         {
             if (prm == null)
-                return default(T);
+                return default;
 
             var converter = TypeDescriptor.GetConverter(typeof(T));
 
@@ -215,11 +228,26 @@ namespace aMorti
             return JsonConvert.DeserializeObject<T>(prm.Value);
 
         }
+
+        /// <summary>
+        /// Parse a JSON string parameter into a T,N tuple from a collection of [params]
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="N"></typeparam>
+        /// <param name="prm"></param>
+        /// <returns></returns>
         private static Tuple<T, N> ParseParameterJSON<T, N>(IEnumerable<ScheduleParameter> prms, ScheduleParameter.ParameterType type)
         {
             return ParseParameterJSON<T, N>(prms.SingleOrDefault(n => n.Type == type));
         }
 
+        /// <summary>
+        /// Parse a JSON string parameter into a T,N tuple
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="N"></typeparam>
+        /// <param name="prm"></param>
+        /// <returns></returns>
         private static Tuple<T, N> ParseParameterJSON<T, N>(ScheduleParameter prm)
         {
             return JsonConvert.DeserializeObject<Tuple<T, N>>(prm.Value);
@@ -356,11 +384,17 @@ namespace aMorti
                 bool instanced_repayments = repaymentOptionDuration > 0 || repaymentOptionMaturityDate > DateTime.MinValue;
                 bool valued_repayments = repaymentOptionValue > 0 ;
 
-                //get the maturity date if we are doing instanced repayments or the maturity date has been defined
-                if (instanced_repayments && repaymentOptionDuration > 0)
-                    repaymentOptionMaturityDate = StartDate.AddFrequency(repaymentOptionDuration, freq);
-
                 DateTime? capRepaymentHolidayEnd = ParseParameter<DateTime?>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END);
+                DateTime? firstRepaymentDate = ParseParameter<DateTime?>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST);
+
+                //calculate the max date between two
+                DateTime maxDate(DateTime? dt1, DateTime dt2)
+                {
+                    if (dt1 == null)
+                        return dt2;
+
+                    return dt1 < dt2 ? dt2 : dt1.Value;
+                }
 
                 foreach (var movement in balanceMovements.OrderBy(n => n.Date))
                 {
@@ -373,8 +407,12 @@ namespace aMorti
                     //Repay by duration?
                     if (instanced_repayments)
                     {
+                        //get the maturity date if we are doing instanced repayments or the maturity date has been defined
+                        if (repaymentOptionDuration > 0)
+                            repaymentOptionMaturityDate = maxDate(firstRepaymentDate, movement.Date).AddFrequency(repaymentOptionDuration, freq);
+
                         //get a set of dates based off the start date forward
-                        var dates = BuildDateTable(freq, movement.Date, repaymentOptionMaturityDate, dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
+                        var dates = BuildDateTable(freq, maxDate(firstRepaymentDate, movement.Date), repaymentOptionMaturityDate, dayOfMonth, false).Select(n => new Entry { Date = n }).ToList();
 
                         if(!dates.Any())
                             throw new Exception("Not enough repayment instances to repay full term. Maturity date is not long enough");
@@ -412,8 +450,15 @@ namespace aMorti
             }
         }
 
-
-
+        /// <summary>
+        /// Build a collection of dates between [start] and [end] using [frequency] as interval.
+        /// </summary>
+        /// <param name="frequency"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="day"></param>
+        /// <param name="useStartAsFirst"></param>
+        /// <returns></returns>
         private IEnumerable<DateTime> BuildDateTable(Frequency frequency, DateTime start, DateTime end, int day, bool useStartAsFirst = true)
         {
             if (day < 1)
@@ -452,6 +497,15 @@ namespace aMorti
             return list;
         }
 
+        /// <summary>
+        /// Generate Repayments for a set of entries.
+        /// </summary>
+        /// <param name="dateStart"></param>
+        /// <param name="entries"></param>
+        /// <param name="frequency"></param>
+        /// <param name="capitalBalance"></param>
+        /// <param name="capRepaymentHolidayEnd"></param>
+        /// <returns></returns>
         private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, IEnumerable<Entry> entries, Frequency frequency , decimal capitalBalance, DateTime? capRepaymentHolidayEnd)
         {
             //how many do we have?
@@ -556,6 +610,16 @@ namespace aMorti
             return entries;
         }
 
+        /// <summary>
+        /// Generate Repayments for a set value.
+        /// </summary>
+        /// <param name="dateStart"></param>
+        /// <param name="repayment_capital_value"></param>
+        /// <param name="frequency"></param>
+        /// <param name="dayofmonth"></param>
+        /// <param name="capitalBalance"></param>
+        /// <param name="capRepaymentHolidayEnd"></param>
+        /// <returns></returns>
         private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, decimal repayment_capital_value, Frequency frequency, int dayofmonth, decimal capitalBalance, DateTime? capRepaymentHolidayEnd)
         {
             List<Entry> entries = new List<Entry>();
@@ -613,7 +677,6 @@ namespace aMorti
 
             return entries;
         }
-
 
         /// <summary>
         /// Total amount outstanding on this schedule.

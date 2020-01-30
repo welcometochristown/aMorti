@@ -44,23 +44,25 @@ namespace Test
                     new ScheduleParameter(ScheduleParameter.ParameterType.VERSION, "1")
                 });
 
-                    List<SchedulePaymentParameter> paymentParams = new[] {
+                List<SchedulePaymentParameter> paymentParams = new[] {
                     new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(DateTime.Now.Date.AddMonths(3).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "250.00"))),
                     new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(DateTime.Now.Date.AddMonths(4).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "250.00")))
                 }.ToList();
 
-                    List<ScheduleRepaymentParameter> repaymentParams = new[] {
+                List<ScheduleRepaymentParameter> repaymentParams = new[] {
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(1).ToShortDateString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, NumrepayValue.Value.ToString()),
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTERESTOUTSTANDING, "0.00"),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1"),
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString())
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString()),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString())
                 }.ToList();
 
                 if (radioMnths.Checked)
                     repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES, numericUpDown1.Value.ToString()));
                 else if (radiorepayvalue.Checked)
                     repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE, numericUpDown2.Value.ToString()));
+                else if (radioMaturity.Checked)
+                    repaymentParams.Add(new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_OPTION_MATURITY_DATE, dateTimePicker1.Value.ToShortDateString()));
 
                 schedule.Fill(paymentParams, repaymentParams);
 
@@ -84,6 +86,7 @@ namespace Test
             Refresh(sManual);
           
             cmbfreq.Items.AddRange(Enum.GetValues(typeof(Common.Frequency)).Cast<Common.Frequency>().Select(n => n.ToString()).ToArray());
+            cmbfreq.Text = Common.Frequency.MONTHLY.ToString();
         }
 
         private void dataGridView1_SelectionChanged(object sender, EventArgs e)

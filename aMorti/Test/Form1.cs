@@ -15,12 +15,9 @@ namespace Test
 {
     public partial class Form1 : Form
     {
-        
         public Form1()
         {
             InitializeComponent();
-
-
         }
 
         private void Button1_Click(object sender, EventArgs e)
@@ -39,22 +36,31 @@ namespace Test
             {
                 //Auto Creation 
                 schedule = Schedule.Create(new[] {
-                    new ScheduleParameter(ScheduleParameter.ParameterType.STARTDATE, DateTime.Now.Date.ToShortDateString()),
-                    new ScheduleParameter(ScheduleParameter.ParameterType.INTERESTRATE, numIR.Value.ToString()),
+                    new ScheduleParameter(ScheduleParameter.ParameterType.STARTDATE, dateLoanStart.Value.ToShortDateString()),
                     new ScheduleParameter(ScheduleParameter.ParameterType.VERSION, "1")
                 });
 
-                List<SchedulePaymentParameter> paymentParams = new[] {
-                    new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(DateTime.Now.Date.AddMonths(3).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "250.00"))),
-                    new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(DateTime.Now.Date.AddMonths(4).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), "250.00")))
-                }.ToList();
+                List<SchedulePaymentParameter> paymentParams = new List<SchedulePaymentParameter>();
+
+                foreach (DataGridViewRow r in dataGridView2.Rows)
+                {
+                    if (r.Cells[0].Value == null || r.Cells[1] == null)
+                        continue;
+
+                    if (!DateTime.TryParse(r.Cells[0].Value.ToString(), out DateTime dt) || !decimal.TryParse(r.Cells[1].Value.ToString(), out decimal val))
+                        continue;
+
+                    paymentParams.Add(new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), val))));
+                }
 
                 List<ScheduleRepaymentParameter> repaymentParams = new[] {
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(4).ToShortDateString()),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTEREST_RATE, numIR.Value.ToString()),
+
+                    //new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(4).ToShortDateString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, NumrepayValue.Value.ToString()),
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, "1"),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, numRepayDay.Value.ToString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString()),
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString()),
+                   // new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString()),
 
                 }.ToList();
 
@@ -99,6 +105,16 @@ namespace Test
             else
                 label1.Text = $"{cells.Sum(n => (decimal)n.Value).ToString("#,##0.00")} ({cells.Count().ToString()})";
 
+        }
+
+        private void dataGridView2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Delete)
+            {
+                var rows = dataGridView2.SelectedRows;
+                foreach (DataGridViewRow r in rows)
+                    dataGridView2.Rows.Remove(r);
+             }
         }
     }
 }

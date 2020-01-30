@@ -13,7 +13,6 @@ namespace aMorti
             //schedule options
             VERSION,
             STARTDATE,
-            INTERESTRATE,
 
             //repayment params
             REPAYMENT_CAPITALOUTSTANDING,           //any other amount to be repaid that is not going to be included in the payments in this schedule
@@ -21,6 +20,8 @@ namespace aMorti
             REPAYMENT_DAYOFMONTH,                   //day to repay, will use last day if the month has less days (e.g 31st will use 30th for April)
             REPAYMENT_FREQUENCY,                    //daily, weekly,bi-weekly, monthly, bi-monthly, yearly, bi-yearly
             REPAYMENT_CAPITAL_HOLIDAY_END,          //defer capital repayments until this date
+            REPAYMENT_DAYS_IN_YEAR,                 //defer capital repayments until this date
+            REPAYMENT_INTEREST_RATE, 
 
             //mutally exclusive repayment options. either you specify duration of schedule or the amount you want to pay each rapyment
             REPAYMENT_OPTION_FREQUENCY_INSTANCES,   //how many months is the term of repayment

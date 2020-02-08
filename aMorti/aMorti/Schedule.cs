@@ -387,6 +387,7 @@ namespace aMorti
 
                 DateTime? capRepaymentHolidayEnd = ParseParameter<DateTime?>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END);
                 DateTime? firstRepaymentDate = ParseParameter<DateTime?>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST);
+                DateTime? secondRepaymentDate = ParseParameter<DateTime?>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST);
 
                 //calculate the max date between two
                 DateTime maxDate(DateTime? dt1, DateTime dt2)

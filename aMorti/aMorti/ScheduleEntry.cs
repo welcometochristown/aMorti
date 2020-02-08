@@ -15,6 +15,26 @@ namespace aMorti
             Repay =1
         }
 
+        private bool _closedEntry;
+
+        [Browsable(true)]
+        [DisplayName("Entry Closed")]
+        public bool ClosedEntry
+        {
+            get
+            {
+                if (OutstandingTotal == 0)
+                    return true;
+
+                return this._closedEntry;
+            }
+            set
+            {
+                this._closedEntry = value;
+            }
+        }
+
+
         [Browsable(false)]
         public Schedule Schedule { get; }
 
@@ -52,7 +72,7 @@ namespace aMorti
         {
             get
             {
-                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Capital).Sum(n => n.Value) * (EntryType == ScheduleEntryTypeEnum.Repay ? -1 : 1);
+                return Capital * EntryPolarity;
             }
         }
 
@@ -73,7 +93,7 @@ namespace aMorti
         {
             get
             {
-                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Interest).Sum(n => n.Value) * (EntryType == ScheduleEntryTypeEnum.Repay ? -1 : 1);
+                return Interest * EntryPolarity;
             }
         }
 
@@ -103,27 +123,85 @@ namespace aMorti
         {
             get
             {
-                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Capital).Sum(n => n.Outstanding);
+                if (this._closedEntry)
+                    return 0;
+
+                return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Capital).Sum(n => n.Outstanding) ;
             }
         }
 
-        [Browsable(false)]
+        [Browsable(true)]
+        [DisplayName("Outstanding Capital")]
+        public decimal OutstandingCapitalSigned
+        {
+            get
+            {
+                if (this._closedEntry)
+                    return 0;
+
+                return OutstandingCapital * EntryPolarity;
+            }
+        }
+
+        [Browsable(true)]
         [DisplayName("Outstanding Interest")]
         public decimal OutstandingInterest
         {
             get
             {
+                if (this._closedEntry)
+                    return 0;
+
                 return ScheduleEntryTransactions.Where(n => n.Type == ScheduleEntryTransaction.TransactionType.Interest).Sum(n => n.Outstanding);
             }
         }
 
-        [Browsable(false)]
-        [DisplayName("Total")]
+        [Browsable(true)]
+        [DisplayName("Outstanding Interest")]
+        public decimal OutstandingInterestSigned
+        {
+            get
+            {
+                if (this._closedEntry)
+                    return 0;
+
+                return OutstandingInterest * EntryPolarity;
+            }
+        }
+
+        [Browsable(true)]
+        [DisplayName("Outstanding Total")]
         public decimal OutstandingTotal
         {
             get
             {
+                if (this._closedEntry)
+                    return 0;
+
                 return OutstandingCapital + OutstandingInterest;
+            }
+        }
+
+        [Browsable(true)]
+        [DisplayName("Outstanding Total")]
+        public decimal OutstandingTotalSigned
+        {
+            get
+            {
+                if (this._closedEntry)
+                    return 0;
+
+                return OutstandingTotal * EntryPolarity;
+            }
+        }
+
+        [Browsable(false)]
+        [DisplayName("Polarity")]
+        private int EntryPolarity
+        {
+            get
+            {
+                return (EntryType == ScheduleEntryTypeEnum.Repay ? -1 : 1);
             }
         }
 

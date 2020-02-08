@@ -51,15 +51,18 @@ namespace Test
                         continue;
 
                     paymentParams.Add(new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL, JsonConvert.SerializeObject(Tuple.Create(dt.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), val))));
+                    //paymentParams.Add(new SchedulePaymentParameter(ScheduleParameter.ParameterType.PAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString()));
+
                 }
 
                 List<ScheduleRepaymentParameter> repaymentParams = new[] {
-                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTEREST_RATE, numIR.Value.ToString()),
-
-                    //new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(4).ToShortDateString()),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_INTEREST_RATE, numIR.Value.ToString()), 
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITALOUTSTANDING, NumrepayValue.Value.ToString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH, numRepayDay.Value.ToString()),
                     new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_FREQUENCY, frequency.ToString()),
+                    new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DAYS_IN_YEAR, cmbDaysInYear.Text),
+
+                    //new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_DATEFIRST, DateTime.Now.Date.AddMonths(4).ToShortDateString()),
                    // new ScheduleRepaymentParameter(ScheduleParameter.ParameterType.REPAYMENT_CAPITAL_HOLIDAY_END, DateTime.Now.Date.AddMonths(3).ToShortDateString()),
 
                 }.ToList();
@@ -81,7 +84,7 @@ namespace Test
         private void Form1_Load(object sender, EventArgs e)
         {
             //Manual Creation 
-            Schedule sManual = new Schedule(DateTime.Now.Date, 1, 100);
+            Schedule sManual = new Schedule(DateTime.Now.Date, 1);
 
             var pEntry = sManual.AddEntry(ScheduleEntry.ScheduleEntryTypeEnum.Pay, DateTime.Now.Date.AddMonths(3));
             pEntry.AddScheduleEntryTransaction(ScheduleEntryTransaction.TransactionType.Capital, 100);
@@ -94,11 +97,12 @@ namespace Test
           
             cmbfreq.Items.AddRange(Enum.GetValues(typeof(Common.Frequency)).Cast<Common.Frequency>().Select(n => n.ToString()).ToArray());
             cmbfreq.Text = Common.Frequency.MONTHLY.ToString();
+            cmbDaysInYear.SelectedIndex = 0;
         }
 
         private void dataGridView1_SelectionChanged(object sender, EventArgs e)
         {
-            var cells = dataGridView1.SelectedCells.Cast<DataGridViewTextBoxCell>();
+            var cells = dataGridView1.SelectedCells.Cast<object>().Where(n => n is DataGridViewTextBoxCell).Cast<DataGridViewTextBoxCell>().ToList();
 
             if (cells.Any(n => !(n.Value is decimal)))
                 label1.Text = $"({cells.Count().ToString()})";
@@ -115,6 +119,26 @@ namespace Test
                 foreach (DataGridViewRow r in rows)
                     dataGridView2.Rows.Remove(r);
              }
+        }
+
+        private void dataGridView1_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            var c = dataGridView1.Rows[e.RowIndex].Cells[e.ColumnIndex] as DataGridViewCheckBoxCell;
+            var o = dataGridView1.Rows[e.RowIndex].DataBoundItem as ScheduleEntry;
+            if (c != null && o != null)
+            {
+                //update closed status
+                o.ClosedEntry = (bool)c.Value;
+
+                //update gridview
+                dataGridView1.Update();
+                dataGridView1.Refresh();
+            }
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            dataGridView1.CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
     }
 }

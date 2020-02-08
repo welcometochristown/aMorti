@@ -16,7 +16,6 @@ namespace aMorti
         public class ScheduleOptions
         {
             public int Version { get; set; }
-            public decimal InterestRate { get; set; }
             public DateTime StartDate { get; set; }
         }
 
@@ -55,7 +54,6 @@ namespace aMorti
 
         public int Version { get; }
         public DateTime StartDate { get; }
-        public decimal InterestRate { get; }
 
         /// <summary>
         /// Allow a user to define their own interest calculation function.
@@ -76,8 +74,7 @@ namespace aMorti
         //Required Parameters For A Schedule
         public static IEnumerable<ScheduleParameter.ParameterType> RequiredParams = new[] { 
             ScheduleParameter.ParameterType.VERSION, 
-            ScheduleParameter.ParameterType.STARTDATE, 
-            ScheduleParameter.ParameterType.INTERESTRATE
+            ScheduleParameter.ParameterType.STARTDATE
         };
 
         /// <summary>
@@ -86,10 +83,9 @@ namespace aMorti
         /// <param name="startdate"></param>
         /// <param name="interestrate"></param>
         /// <param name="version"></param>
-        public Schedule(DateTime startdate, decimal interestrate, int version = 1)
+        public Schedule(DateTime startdate, int version = 1)
         {
             this.Version = version;
-            this.InterestRate = interestrate;
             this.StartDate = startdate;
         }
 
@@ -98,7 +94,7 @@ namespace aMorti
         /// </summary>
         /// <param name="options"></param>
         public Schedule(ScheduleOptions options)
-            :this(options.StartDate, options.InterestRate, options.Version)
+            :this(options.StartDate, options.Version)
         {    /**/   }
 
         /// <summary>
@@ -177,7 +173,6 @@ namespace aMorti
 
             //create schedule
             var schedule = new Schedule(ParseParameter<DateTime>(parameters, ScheduleParameter.ParameterType.STARTDATE),
-                                        ParseParameter<decimal>(parameters, ScheduleParameter.ParameterType.INTERESTRATE),
                                         ParseParameter<int>(parameters, ScheduleParameter.ParameterType.VERSION));
 
             //fil schedule
@@ -371,6 +366,9 @@ namespace aMorti
                 //day of month to repay
                 int dayOfMonth = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYOFMONTH);
 
+                //interest rate
+                int interestRate = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_INTEREST_RATE);
+
                 //how many months?
                 var repaymentOptionDuration = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_OPTION_FREQUENCY_INSTANCES);
 
@@ -379,6 +377,9 @@ namespace aMorti
 
                 //how much to repay each repayment?
                 var repaymentOptionValue = ParseParameter<decimal>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_OPTION_REPAY_VALUE);
+
+                var daysInYear = ParseParameter<int>(repaymentParameters, ScheduleParameter.ParameterType.REPAYMENT_DAYS_IN_YEAR);
+
 
                 //repayment option
                 bool instanced_repayments = repaymentOptionDuration > 0 || repaymentOptionMaturityDate > DateTime.MinValue;
@@ -418,7 +419,7 @@ namespace aMorti
                             throw new Exception("Not enough repayment instances to repay full term. Maturity date is not long enough");
 
                         //generate repayments
-                        var repayments = GenerateRepayments(movement.Date, dates, freq, capitalBalance, capRepaymentHolidayEnd);
+                        var repayments = GenerateRepayments(movement.Date, dates, freq, capitalBalance, interestRate, daysInYear, capRepaymentHolidayEnd);
 
                         //add entries
                         entries.AddRange(repayments);
@@ -427,7 +428,7 @@ namespace aMorti
                     else if (valued_repayments)
                     {
                         //generate repayments
-                        var repayments = GenerateRepayments(movement.Date, repaymentOptionValue, freq, dayOfMonth, capitalBalance, capRepaymentHolidayEnd);
+                        var repayments = GenerateRepayments(movement.Date, repaymentOptionValue, freq, dayOfMonth, capitalBalance, interestRate, daysInYear, capRepaymentHolidayEnd);
 
                         //add entries
                         entries.AddRange(repayments);
@@ -506,7 +507,7 @@ namespace aMorti
         /// <param name="capitalBalance"></param>
         /// <param name="capRepaymentHolidayEnd"></param>
         /// <returns></returns>
-        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, IEnumerable<Entry> entries, Frequency frequency , decimal capitalBalance, DateTime? capRepaymentHolidayEnd)
+        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, IEnumerable<Entry> entries, Frequency frequency, decimal capitalBalance, decimal interestRate, int daysInYear, DateTime? capRepaymentHolidayEnd)
         {
             //how many do we have?
             int instances = entries.Count();
@@ -524,7 +525,7 @@ namespace aMorti
                 instances = entries.Count(n => n.Date > capRepaymentHolidayEnd);
             }
 
-            if (InterestRate == 0)
+            if (interestRate == 0)
             {
                 //no interest just use the capital balance
                 ideal_total_repayment = Math.Round(capitalBalance * instances);
@@ -536,7 +537,7 @@ namespace aMorti
 
                 //ratio based on a 12 month year
                 decimal yearly_month_ratio = 1200 / Common.GetMonthlyMultiplier(frequency);
-                decimal ir = (1.0m + (InterestRate / yearly_month_ratio));
+                decimal ir = (1.0m + (interestRate / yearly_month_ratio));
                 decimal x = capitalBalance * ir * ((1.0m / ir) - 1.0m);
                 decimal y = (1.0m / Convert.ToDecimal(Math.Pow(Convert.ToDouble(ir), Convert.ToDouble(instances)))) - 1.0m;
                 ideal_total_repayment = x / y;
@@ -574,7 +575,7 @@ namespace aMorti
 
                 //only days after the first entry will accrue interest
                 if (dateStart != entry.Date)
-                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 365);
+                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, interestRate, daysInYear);
 
                 //rounded interest
                 entry.ValueInterest = Math.Round(interestAccrued, 2, MidpointRounding.ToEven);
@@ -620,7 +621,7 @@ namespace aMorti
         /// <param name="capitalBalance"></param>
         /// <param name="capRepaymentHolidayEnd"></param>
         /// <returns></returns>
-        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, decimal repayment_capital_value, Frequency frequency, int dayofmonth, decimal capitalBalance, DateTime? capRepaymentHolidayEnd)
+        private IEnumerable<Entry> GenerateRepayments(DateTime dateStart, decimal repayment_capital_value, Frequency frequency, int dayofmonth, decimal capitalBalance, decimal interestRate, int daysInYear, DateTime? capRepaymentHolidayEnd)
         {
             List<Entry> entries = new List<Entry>();
 
@@ -651,7 +652,7 @@ namespace aMorti
                  
                 //only days after the first entry will accrue interest
                 if (dateStart != entry.Date)
-                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, InterestRate, 365);
+                    interestAccrued += InterestCalcFunc(dtLast, interest_accrual_end, currentBalance, interestRate, daysInYear);
 
                 entry.ValueInterest = Math.Round(interestAccrued, 2, MidpointRounding.ToEven);
 
